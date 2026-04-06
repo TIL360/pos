@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <title>Stock Ledger | Pharmacy Management 2026</title>
+    <style>
+        :root {
+            --medical-blue: #102a43;
+            --teal-accent: #3ebd93;
+            --bg-light: #f0f4f8;
+            --white: #ffffff;
+            --danger: #ef4e4e;
+            --success: #2ecc71;
+            --text-dark: #243b53;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background-color: var(--bg-light); 
+            margin: 0; padding: 40px; color: var(--text-dark);
+        }
+
+        .back-link { 
+            text-decoration: none; color: var(--medical-blue); 
+            font-weight: bold; display: inline-block; margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .back-link:hover { transform: translateX(-5px); color: var(--teal-accent); }
+
+        .card { 
+            background: var(--white); padding: 30px; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 1200px; margin: auto;
+            border: 1px solid #d9e2ec;
+        }
+
+        h2 { color: var(--medical-blue); margin-top: 0; display: flex; align-items: center; gap: 10px; }
+        
+        /* Search Bar Section */
+        .search-container { margin: 25px 0; position: relative; }
+        #inventorySearch {
+            padding: 15px 20px; width: 100%; border-radius: 12px;
+            border: 2px solid #d9e2ec; font-size: 1rem; box-sizing: border-box;
+            outline: none; transition: all 0.3s;
+        }
+        #inventorySearch:focus { border-color: var(--teal-accent); box-shadow: 0 0 10px rgba(62, 189, 147, 0.1); }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; border-radius: 12px; overflow: hidden; }
+        thead { background: var(--medical-blue); color: white; }
+        th, td { padding: 18px; text-align: left; border-bottom: 1px solid #f0f4f8; }
+        tr:hover { background-color: #f9fbfd; }
+
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: #e0f2f1; color: var(--teal-accent); }
+        .low-stock { color: var(--danger); font-weight: 800; background: #fff5f5; padding: 5px 10px; border-radius: 8px; }
+        
+        .price-input {
+            width: 90px; padding: 8px; border: 2px solid var(--teal-accent);
+            border-radius: 8px; font-size: 14px; outline: none;
+        }
+
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
+        .action-btn:hover { transform: scale(1.2); opacity: 0.8; }
+        
+        .save-btn { color: var(--success); }
+        .cancel-btn { color: var(--danger); }
+        
+        .no-data { text-align: center; padding: 60px; color: #829ab1; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<a href="dashboard.html" class="back-link">← Return to Dashboard</a>
+
+<div class="card">
+    <h2>📊 Pharmacy Stock Ledger</h2>
+    
+    <div class="search-container">
+        <input type="text" id="inventorySearch" placeholder="🔍 Search by Medicine Name, Generic, or Barcode..." onkeyup="filterInventory()">
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>SKU ID</th>
+                <th>Medicine Name</th>
+                <th>Barcode</th>
+                <th>Retail Price</th>
+                <th>Available Units</th>
+                <th>Target Stock</th>
+                <th>Category</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+            <tr><td colspan="7" class="no-data">Initializing ledger...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // 1. Filter Logic
+    function filterInventory() {
+        const filter = document.getElementById('inventorySearch').value.toLowerCase();
+        const rows = document.getElementById('inventoryTableBody').getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            if (row.classList.contains('no-data')) continue;
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        }
+    }
+
+    // 2. Load Data from Pharmacy Database
+    async function loadInventory() {
+        const tableBody = document.getElementById('inventoryTableBody');
+        try {
+            const products = await window.authAPI.getAllProducts();
+            if (products && products.length > 0) {
+                tableBody.innerHTML = products.map(p => {
+                    const isLow = p.stock <= (p.min_stock_level * 0.5); // Alert if below 50% of target
+                    return `
+                        <tr>
+                            <td>#${p.id}</td>
+                            <td><strong>${p.name}</strong></td>
+                            <td><code>${p.barcode || 'N/A'}</code></td>
+                            <td id="price-cell-${p.id}">
+                                <span id="price-display-${p.id}">Rs. ${parseFloat(p.price).toFixed(2)}</span>
+                                <button class="action-btn" title="Edit Price" onclick="editPrice(${p.id}, ${p.price})">✏️</button>
+                            </td>
+                            <td class="${isLow ? 'low-stock' : ''}">
+                                ${p.stock} ${isLow ? '⚠️ SHORTAGE' : ''}
+                            </td>
+                            <td id="stock-cell-${p.id}">
+                                <span id="stock-display-${p.id}">${(parseFloat(p.min_stock_level) || 0)}</span>
+                                <button class="action-btn" title="Adjust Target" onclick="editStockLevel(${p.id}, ${p.min_stock_level})">⚙️</button>
+                            </td>
+                            <td><span class="badge">${p.category || 'General'}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7" class="no-data">No medicinal records found.</td></tr>';
+            }
+        } catch (err) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="no-data" style="color:var(--danger);">Database Link Failure.</td></tr>';
+        }
+    }
+
+    // 3. Inline Editing Functions
+    function editPrice(id, current) {
+        const cell = document.getElementById(`price-cell-${id}`);
+        cell.innerHTML = `
+            <input type="number" step="0.01" id="input-price-${id}" value="${current}" class="price-input">
+            <button class="action-btn save-btn" onclick="savePrice(${id})">✅</button>
+            <button class="action-btn cancel-btn" onclick="loadInventory()">❌</button>
+        `;
+    }
+
+    async function savePrice(id) {
+        const newPrice = parseFloat(document.getElementById(`input-price-${id}`).value);
+        const res = await window.authAPI.updateProductPrice(id, newPrice);
+        if (res.success) loadInventory();
+        else alert("Update Failed: " + res.error);
+    }
+
+    function editStockLevel(id, current) {
+        const cell = document.getElementById(`stock-cell-${id}`);
+        cell.innerHTML = `
+            <input type="number" id="input-stock-${id}" value="${current}" class="price-input">
+            <button class="action-btn save-btn" onclick="saveStockLevel(${id})">✅</button>
+            <button class="action-btn cancel-btn" onclick="loadInventory()">❌</button>
+        `;
+    }
+
+    async function saveStockLevel(id) {
+        const newLevel = parseInt(document.getElementById(`input-stock-${id}`).value);
+        const res = await window.authAPI.updateProductStockLevel(id, newLevel);
+        if (res.success) loadInventory();
+        else alert("Update Failed: " + res.error);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadInventory);
+</script>
+</body>
+</html>

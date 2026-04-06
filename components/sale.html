@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prescription Billing | Pharmacy POS 2026</title>
+    <style>
+        :root {
+            --medical-blue: #102a43;
+            --teal-accent: #3ebd93;
+            --bg-light: #f0f4f8;
+            --white: #ffffff;
+            --danger: #ef4e4e;
+            --text-dark: #243b53;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-light); margin: 0; display: flex; flex-direction: column; height: 100vh; color: var(--text-dark); }
+        
+        .billing-header { background: var(--medical-blue); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+
+        .main-container { display: grid; grid-template-columns: 1fr 400px; flex: 1; overflow: hidden; }
+
+        .entry-side { padding: 30px; overflow-y: auto; }
+
+        /* --- Verification & Entry Bar --- */
+        .entry-bar {
+            background: var(--white); padding: 20px; border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;
+            display: grid; grid-template-columns: 1.2fr 2.5fr 0.8fr 1fr; gap: 15px; align-items: end;
+        }
+
+        .field-group label { display: block; font-size: 11px; font-weight: 700; color: #829ab1; text-transform: uppercase; margin-bottom: 5px; }
+        
+        input { 
+            width: 100%; padding: 12px; border: 2px solid #d9e2ec; border-radius: 8px; 
+            font-size: 14px; box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--medical-blue); }
+
+        .readonly-display { background: #eef2f6 !important; font-weight: 700; color: var(--medical-blue); border-color: #e0e6ed !important; cursor: not-allowed; }
+
+        .btn-add { background: var(--medical-blue); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 45px; transition: 0.3s; }
+        .btn-add:hover { background: var(--teal-accent); }
+
+        /* --- Table --- */
+        .bill-table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; }
+        .bill-table th { background: #f0f4f8; color: var(--medical-blue); padding: 15px; text-align: left; }
+        .bill-table td { padding: 15px; border-bottom: 1px solid #f0f4f8; }
+
+        /* --- Summary Side --- */
+        .summary-side { background: var(--white); border-left: 1px solid #d9e2ec; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .total-display { background: #f0fdf9; border: 2px solid var(--teal-accent); padding: 20px; border-radius: 15px; text-align: center; }
+        .total-display span { font-size: 38px; font-weight: 800; color: var(--teal-accent); }
+
+        .calc-row { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #486581; }
+        
+        .checkout-btn { width: 100%; padding: 18px; background: var(--medical-blue); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .checkout-btn:hover { background: var(--teal-accent); }
+    </style>
+</head>
+<body>
+
+<div class="billing-header">
+    <div style="font-weight: 800;">RETAIL MANAGEMENT SYSTEM (RMS) 2026 | New Transaction</div>
+    <!-- <button onclick="location.href='dashboard.html'" style="background:rgba(255,255,255,0.1); border:none; color:white; padding:8px 15px; border-radius:5px; cursor:pointer;">Exit</button> -->
+</div>
+
+<div class="main-container">
+    <div class="entry-side">
+        <!-- Search & Single Display Row -->
+        <div class="entry-bar">
+            <div class="field-group">
+                <label>1. Scan Barcode</label>
+                <input type="text" id="scanInp" placeholder="Search..." onchange="lookupMedicine()" autofocus>
+            </div>
+            <div class="field-group">
+                <label>Verification (Product | Stock Available)</label>
+                <input type="text" id="verifyDisplay" class="readonly-display" readonly placeholder="Waiting for scan...">
+            </div>
+            <div class="field-group">
+                <label>Sell Qty</label>
+                <input type="number" id="sellQty" value="1" min="1">
+            </div>
+            <button class="btn-add" onclick="addToBill()">Add Item</button>
+        </div>
+
+        <table class="bill-table">
+            <thead>
+                <tr>
+                    <th>Medicine Name</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Subtotal</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="billBody"></tbody>
+        </table>
+    </div>
+
+    <div class="summary-side">
+        <h3>Billing Summary</h3>
+        <div class="field-group">
+    <label>Customer Name</label>
+    <input type="text" id="customerNameInp" value="General Customer">
+</div>
+
+        <div class="calc-row">
+            <span>Sub-Total</span>
+            <span id="subTotalDisp">0.00</span>
+        </div>
+
+        <div class="field-group">
+            <label>Discount Amount (Rs.)</label>
+            <input type="number" id="discountInp" value="0" oninput="calculateFinalTotal()" placeholder="0.00">
+        </div>
+
+        <div class="total-display">
+            <small style="color: #627d98; font-weight: 700;">PAYABLE AMOUNT (RS.)</small><br>
+            <span id="grandTotal">0.00</span>
+        </div>
+
+        <div class="field-group">
+            <label>Cash Received</label>
+            <input type="number" id="cashReceived" oninput="calculateFinalTotal()" style="font-size: 20px; font-weight: 700; color: var(--medical-blue);">
+        </div>
+
+        <div class="calc-row" style="font-size: 1.2rem; border-top: 1px solid #f0f4f8; padding-top: 10px;">
+            <span>Change Due</span>
+            <span id="changeDue" style="color: var(--medical-blue);">Rs. 0.00</span>
+        </div>
+<div class="field-group">
+    <label>Payment Method</label>
+    <select id="paymentMethod" style="width: 100%; padding: 12px; border: 2px solid #d9e2ec; border-radius: 8px;">
+        <option value="Cash">Cash</option>
+        <option value="Online">Online Payment</option>
+        <option value="Card">Bank Card</option>
+    </select>
+</div>
+
+
+        <button class="checkout-btn" onclick="processSale()">Complete & Print Invoice</button>
+    </div>
+</div>
+
+<script>
+    let currentMed = null;
+    let cart = [];
+
+    // 1. Unified Lookup - Barcode Scanning
+    async function lookupMedicine() {
+        const val = document.getElementById('scanInp').value;
+        if (!val) return;
+        
+        try {
+            const med = await window.authAPI.getProductByBarcode(val);
+            if (med) {
+                currentMed = med;
+                document.getElementById('verifyDisplay').value = `${med.name} | Stock: ${med.stock}`;
+                document.getElementById('sellQty').focus();
+            } else {
+                alert("No product found with the barcode.");
+                resetEntry();
+            }
+        } catch (err) {
+            console.error("Lookup Error:", err);
+        }
+    }
+
+    // 2. Add to Bill logic
+    function addToBill() {
+        if (!currentMed) return;
+        const qty = parseInt(document.getElementById('sellQty').value);
+        if (qty > currentMed.stock) return alert("Insufficient stock available!");
+
+        const existing = cart.find(i => i.id === currentMed.id);
+        if (existing) {
+            existing.qty += qty;
+        } else {
+            cart.push({ 
+                id: currentMed.id, 
+                name: currentMed.name, 
+                price: currentMed.price, 
+                qty: qty 
+            });
+        }
+
+        renderBill();
+        resetEntry();
+    }
+
+    function renderBill() {
+        const body = document.getElementById('billBody');
+        body.innerHTML = '';
+        let subtotal = 0;
+
+        cart.forEach((item, i) => {
+            const lineTotal = item.price * item.qty;
+            subtotal += lineTotal;
+            body.innerHTML += `
+                <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.price.toFixed(2)}</td>
+                    <td>${item.qty}</td>
+                    <td>${lineTotal.toFixed(2)}</td>
+                    <td><button onclick="remove(${i})" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">✖</button></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('subTotalDisp').innerText = subtotal.toFixed(2);
+        calculateFinalTotal();
+    }
+
+    function calculateFinalTotal() {
+        const subtotal = parseFloat(document.getElementById('subTotalDisp').innerText) || 0;
+        const discount = parseFloat(document.getElementById('discountInp').value) || 0;
+        const finalTotal = subtotal - discount;
+        
+        document.getElementById('grandTotal').innerText = finalTotal.toFixed(2);
+        
+        const cash = parseFloat(document.getElementById('cashReceived').value) || 0;
+        const change = cash - finalTotal;
+        document.getElementById('changeDue').innerText = `Rs. ${change.toFixed(2)}`;
+    }
+
+    function resetEntry() {
+        document.getElementById('scanInp').value = '';
+        document.getElementById('verifyDisplay').value = '';
+        document.getElementById('sellQty').value = 1;
+        currentMed = null;
+        document.getElementById('scanInp').focus();
+    }
+
+    function remove(i) { 
+        cart.splice(i, 1); 
+        renderBill(); 
+    }
+
+    // 3. PRINT BILL FUNCTION
+    function printInvoice(data) {
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        const itemRows = data.items.map(item => `
+            <tr>
+                <td style="padding:5px; border-bottom:1px solid #ddd;">${item.name}</td>
+                <td style="text-align:center; padding:5px; border-bottom:1px solid #ddd;">${item.qty}</td>
+                <td style="text-align:right; padding:5px; border-bottom:1px solid #ddd;">${(item.price * item.qty).toFixed(2)}</td>
+            </tr>
+        `).join('');
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Invoice - ${data.customerName}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; }
+                        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                        .header h2 { margin: 0; text-transform: uppercase; }
+                        .header p { margin: 2px 0; font-size: 14px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        .totals { margin-top: 20px; text-align: right; border-top: 1px solid #eee; padding-top: 10px; }
+                        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #777; border-top: 1px dashed #ccc; padding-top: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>Your Business name</h2>
+                        <p>Your business address</p>
+                        <p>Contact: 03030-xxxxxxx</p>
+                        <hr>
+                        <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                        <p><strong>Customer:</strong> ${data.customerName}</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr style="background:#f4f4f4;">
+                                <th style="text-align:left; padding:5px;">Item</th>
+                                <th style="padding:5px;">Qty</th>
+                                <th style="text-align:right; padding:5px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemRows}</tbody>
+                    </table>
+                    <div class="totals">
+                        <p>Subtotal: Rs. ${(data.total + data.discount).toFixed(2)}</p>
+                        <p>Discount: Rs. ${data.discount.toFixed(2)}</p>
+                        <h3 style="margin: 5px 0;">Grand Total: Rs. ${data.total.toFixed(2)}</h3>
+                        <p>Cash Paid: Rs. ${data.cashReceived.toFixed(2)} | Change: Rs. ${data.changeDue.toFixed(2)}</p>
+                        <p>Payment: ${data.paymentMethod}</p>
+                    </div>
+                    <div class="footer">Thank you for shopping with us!</div>
+                    <script>
+                        window.onload = function() { window.print(); window.close(); };
+                    <\/script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    // 4. COMPLETE SALE
+    async function processSale() {
+        if (cart.length === 0) return alert("Bill is empty!");
+        
+        const saleData = {
+            items: [...cart],
+            total: parseFloat(document.getElementById('grandTotal').innerText),
+            discount: parseFloat(document.getElementById('discountInp').value) || 0,
+            cashReceived: parseFloat(document.getElementById('cashReceived').value) || 0,
+            changeDue: parseFloat(document.getElementById('changeDue').innerText.replace('Rs. ', '')) || 0,
+            customerName: document.getElementById('customerNameInp').value || "General Customer",
+            paymentMethod: document.getElementById('paymentMethod').value,
+            processedBy: "Admin"
+        };
+
+        const res = await window.authAPI.processSale(saleData);
+        if (res.success) {
+            // Trigger the printout
+            printInvoice(saleData);
+            
+            alert("Sale Completed Successfully!");
+            location.reload();
+        } else {
+            alert("Error saving sale: " + res.error);
+        }
+    }
+
+    // Keypress listener for faster scanning
+    document.getElementById('scanInp').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') lookupMedicine();
+    });
+</script>
+
+
+</body>
+</html>

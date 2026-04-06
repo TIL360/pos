@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Supplier Return | POS 2026</title>
+    <style>
+        :root { --primary: #5d4037; --bg: #fdf0d5; --white: #ffffff; --danger: #e74c3c; --success: #2ecc71; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 40px; }
+        .card { background: var(--white); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--primary); }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.3s; }
+        .btn-return { background-color: var(--danger); color: white; }
+        .btn-return:hover { background-color: #c0392b; }
+        .stock-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 0.9rem; }
+        .back-link { text-decoration: none; color: var(--primary); font-weight: bold; display: inline-block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <a href="dashboard.html" class="back-link">← Back to Dashboard</a>
+    <div class="card">
+        <h2>📦 Supplier Return (Outward)</h2>
+        
+        <div class="form-group">
+            <label>Scan Barcode / Enter ID:</label>
+            <input type="text" id="barcode" placeholder="Enter product barcode..." onchange="fetchProduct()">
+        </div>
+
+        <div id="productDetails" style="display:none;">
+            <div class="stock-info">
+                <p><strong>Product:</strong> <span id="dispName"></span></p>
+                <p><strong>Current Stock:</strong> <span id="dispStock"></span></p>
+            </div>
+
+            <div class="form-group" style="margin-top:20px;">
+                <label>Supplier Name:</label>
+                <input type="text" id="supplier" placeholder="Wholesaler Name">
+            </div>
+
+            <div class="form-group">
+                <label>Quantity to Return:</label>
+                <input type="number" id="qty" min="1" value="1">
+            </div>
+
+            <button class="btn btn-return" onclick="handleSupplierReturn()">Deduct Stock & Process Return</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProduct = null;
+
+        async function fetchProduct() {
+            const barcode = document.getElementById('barcode').value;
+            const product = await window.authAPI.getProductByBarcode(barcode);
+            
+            if (product) {
+                currentProduct = product;
+                document.getElementById('dispName').innerText = product.name;
+                document.getElementById('dispStock').innerText = product.stock;
+                document.getElementById('productDetails').style.display = 'block';
+            } else {
+                alert("Product not found!");
+                document.getElementById('productDetails').style.display = 'none';
+            }
+        }
+
+        async function handleSupplierReturn() {
+            const qty = parseInt(document.getElementById('qty').value);
+            const supplier = document.getElementById('supplier').value;
+
+            if (!supplier) return alert("Please enter supplier name");
+            if (qty > currentProduct.stock) return alert("Error: Return quantity exceeds current stock!");
+
+            const returnData = {
+                productId: currentProduct.id,
+                quantity: qty,
+                costPrice: currentProduct.cost_price,
+                supplier: supplier
+            };
+
+            const result = await window.authAPI.supplierReturn(returnData);
+            if (result.success) {
+                alert("Return processed successfully. Stock updated.");
+                location.reload();
+            } else {
+                alert("Error: " + result.error);
+            }
+        }
+    </script>
+</body>
+</html>

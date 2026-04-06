@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Return</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { display: flex; gap: 20px; max-width: 1200px; margin: auto; }
+        
+        /* Left Panel - Entry Form */
+        .left-panel { flex: 1; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .left-panel h2 { color: #2c3e50; border-left: 4px solid #3498db; padding-left: 10px; margin-bottom: 25px; }
+        
+        /* Right Panel - Bill Display */
+        .right-panel { flex: 1; background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column; }
+        .bill-header { background: #2c3e50; color: white; padding: 15px; margin: -25px -25px 20px -25px; border-radius: 8px 8px 0 0; text-align: center; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        
+        .btn-process { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-process:hover { background: #34495e; }
+
+        #billItemsContainer { flex-grow: 1; min-height: 200px; border: 1px dashed #ccc; padding: 10px; margin-top: 10px; border-radius: 4px; overflow-y: auto; }
+        .item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        
+        .financial-summary { margin-top: 20px; padding-top: 15px; border-top: 2px solid #2c3e50; font-weight: bold; }
+        .fin-row { display: flex; justify-content: space-between; margin-bottom: 5px; color: #333; }
+        .highlight { color: #e74c3c; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Left Panel: Form Entry -->
+    <div class="left-panel">
+        
+        <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        <h2>— RETURN ENTRY</h2>
+        <div class="form-group">
+            <label>1. Bill Number</label>
+            <input type="number" id="billNumberInp" placeholder="Enter Bill ID (e.g. 1)" oninput="loadBillDetails()">
+        </div>
+        <div class="form-group">
+            <label>2. Barcode</label>
+            <input type="text" id="productSearch" placeholder="Scan or select item...">
+        </div>
+        <div class="form-group">
+            <label>3. Quantity to Return</label>
+            <input type="number" id="returnQty" value="1">
+        </div>
+        <button class="btn-process" onclick="processRefund()">PROCESS REFUND</button>
+    </div>
+
+    <!-- Right Panel: Bill Contents -->
+    <div class="right-panel">
+        <div class="bill-header">
+            <h2 id="billTitleDisplay" style="margin:0;">BILL CONTENTS</h2>
+        </div>
+        
+        <div id="billItemsContainer">
+            <p style="text-align: center; color: #999; margin-top: 50px;">Enter Bill ID to view items.</p>
+        </div>
+
+        <div class="financial-summary">
+            <div class="fin-row"><span>Bill Total:</span> <span id="displayTotal">0.00</span></div>
+            <div class="fin-row" style="color: #27ae60;"><span>Discount Given:</span> <span id="displayDiscount">0.00</span></div>
+            <div class="fin-row"><span>Cash Received:</span> <span id="displayCash">0.00</span></div>
+            <div class="fin-row" style="color: #2980b9;"><span>Change Given:</span> <span id="displayChange">0.00</span></div>
+            <div class="financial-row">
+    <span>Refund Amount:</span>
+    <span id="displayRefundAmount" style="color: red; font-weight: bold;">0.00</span>
+    <button onclick="openReturnModal()" style="margin-left:10px; font-size: 12px; cursor: pointer;">
+        Return Products Detail
+    </button>
+</div>
+<div class="financial-row">
+    <span>Refund Date:</span>
+    <span id="displayRefundDate">N/A</span>
+</div>
+        </div>
+    </div>
+</div>
+<!-- Simple Modal Structure -->
+<div id="returnModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; width:50%; margin: 10% auto; padding:20px; border-radius:8px;">
+        <h3>Returned Items Detail</h3>
+        <table style="width:100%; border-collapse: collapse;" border="1">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty Returned</th>
+                    <th>Refund Price</th>
+                </tr>
+            </thead>
+            <tbody id="modalReturnBody"></tbody>
+        </table>
+        <button onclick="document.getElementById('returnModal').style.display='none'" style="margin-top:20px;">Close</button>
+    </div>
+</div>
+
+<script>
+    // These MUST be at the top level so all functions can see them
+    let selectedSaleItemId = null;
+    let selectedSaleId = null;
+
+    /**
+     * 1. This function is triggered when you click an item in the list.
+     * It captures the IDs needed for the database update.
+     */
+    function selectItemForReturn(barcode, saleItemId, saleId) {
+        console.log("Selecting Item - Barcode:", barcode, "ItemID:", saleItemId, "SaleID:", saleId);
+        
+        const barcodeInput = document.getElementById('productSearch');
+        if (barcodeInput) {
+            barcodeInput.value = barcode;
+            
+            // CRITICAL: We save these values to the global variables
+            selectedSaleItemId = saleItemId;
+            selectedSaleId = saleId;
+            
+            // Visual feedback
+            barcodeInput.style.backgroundColor = '#d4edda';
+            setTimeout(() => barcodeInput.style.backgroundColor = 'white', 500);
+            
+            // Focus on quantity input for the user
+            document.getElementById('returnQty').focus();
+        }
+    }
+
+    /**
+     * 2. Fetches bill details and renders the clickable items list.
+     */
+    async function loadBillDetails() {
+        const billInput = document.getElementById('billNumberInp');
+        const container = document.getElementById('billItemsContainer');
+        const billTitle = document.getElementById('billTitleDisplay');
+
+        if (!billInput || !billInput.value) {
+            container.innerHTML = `<p style="text-align: center; color: #999; margin-top: 50px;">Enter Bill ID to view items.</p>`;
+            return;
+        }
+
+        try {
+            const res = await window.authAPI.getBillDetails(billInput.value);
+            
+            if (res.success && res.bill) {
+                const { bill, items } = res;
+                billTitle.innerText = `BILL #${bill.id} - ${bill.customer_name || 'General Customer'}`;
+
+                if (items && items.length > 0) {
+                    // Update: Ensure we use the exact property names from your DB query
+                    container.innerHTML = items.map(item => `
+                        <div class="item-row" 
+                             style="cursor: pointer; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;" 
+                             onclick="selectItemForReturn('${item.barcode}', ${item.sale_item_id}, ${bill.id})"
+                             onmouseover="this.style.background='#f8f9fa'" 
+                             onmouseout="this.style.background='transparent'">
+                            <span><strong>${item.name}</strong></span>
+                            <span>${item.quantity} x Rs. ${parseFloat(item.price).toFixed(2)}</span>
+                            <span><strong>Rs. ${(item.quantity * item.price).toFixed(2)}</strong></span>
+                        </div>`).join('');
+                } else {
+                    container.innerHTML = `<p style="text-align:center; padding:20px;">No items found in this bill.</p>`;
+                }
+
+                // Update Financials
+                document.getElementById('displayTotal').innerText = (bill.total || 0).toFixed(2);
+                document.getElementById('displayDiscount').innerText = (bill.discount || 0).toFixed(2);
+                document.getElementById('displayCash').innerText = (bill.cash_received || 0).toFixed(2);
+                document.getElementById('displayChange').innerText = (bill.change_due || 0).toFixed(2);
+                
+document.getElementById('displayRefundAmount').innerText = (bill.refund_amount || 0).toFixed(2);
+document.getElementById('displayRefundDate').innerText = bill.return_date || "N/A";
+
+            } else {
+                container.innerHTML = `<p style="color:red; text-align:center; padding:20px;">Bill not found.</p>`;
+            }
+        } catch (err) {
+            console.error("Load Error:", err);
+        }
+    }
+
+    /**
+     * 3. Sends the refund data to the backend.
+     */
+    async function processRefund() {
+        const qty = parseInt(document.getElementById('returnQty').value);
+
+        // Validation - If these are null, the user didn't click the list
+        if (!selectedSaleItemId || !selectedSaleId || isNaN(qty) || qty <= 0) {
+            alert("Please click an item from the list and enter a valid quantity.");
+            return;
+        }
+
+        const returnData = {
+            saleItemId: selectedSaleItemId,
+            saleId: selectedSaleId,
+            returnQty: qty
+        };
+
+        try {
+            const res = await window.authAPI.processCustomerReturn(returnData);
+            
+            if (res.success) {
+                alert("Refund Processed! Totals, Cash, and Stock updated.");
+                location.reload(); 
+            } else {
+                alert("Error: " + res.message);
+            }
+        } catch (err) {
+            console.error("Return Error:", err);
+            alert("System error. Check if 'processCustomerReturn' is in your bridge.");
+        }
+    }
+
+    function resetFinancials() {
+    // Add the two new IDs to the array
+    ['displayTotal', 'displayDiscount', 'displayCash', 'displayChange', 'displayRefundAmount', 'displayRefundDate'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.innerText = id === 'displayRefundDate' ? "N/A" : "0.00";
+        }
+    });
+    selectedSaleItemId = null;
+    selectedSaleId = null;
+}
+//open return model
+async function openReturnModal() {
+    const billId = document.getElementById('billNumberInp').value;
+    
+    if (!billId) {
+        alert("Please search for a Bill ID first.");
+        return;
+    }
+
+    try {
+        // Use the NEW specific function
+        const items = await window.authAPI.getReturnHistoryBySale(billId);
+        const tbody = document.getElementById('modalReturnBody');
+        
+        if (items && items.length > 0) {
+            tbody.innerHTML = items.map(item => `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px;">${item.name}</td>
+                    <td style="padding: 8px;">${item.quantity_returned}</td> 
+                    <td style="padding: 8px;">Rs. ${parseFloat(item.refund_amount).toFixed(2)}</td>
+                    <td style="padding: 8px; font-size: 0.8em;">${new Date(item.return_date).toLocaleString()}</td>
+                </tr>
+            `).join('');
+            document.getElementById('returnModal').style.display = 'block';
+        } else {
+            alert("No return history found for this specific bill.");
+        }
+    } catch (err) {
+        console.error("Modal Error:", err);
+    }
+}
+
+
+</script>
+
+
+
+
+
+
+</body>
+</html>

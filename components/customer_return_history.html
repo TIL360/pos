@@ -1,0 +1,66 @@
+_<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Return History</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background-color: #34495e; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        .refund-text { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        
+        <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        <h2>Customer Return History</h2>
+        <input type="text" id="search" placeholder="Search by Bill ID or Product..." onkeyup="filterTable()" style="padding: 10px; width: 100%; box-sizing: border-box;">
+        
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Bill #</th>
+                    <th>Product</th>
+                    <th>Qty Returned</th>
+                    <th>Refund Amount</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <!-- Data populated by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadHistory() {
+            const history = await window.authAPI.getReturnHistory();
+            const body = document.getElementById('historyBody');
+            
+            body.innerHTML = history.map(row => `
+                <tr>
+                    <td>${new Date(row.return_date).toLocaleString()}</td>
+                    <td>#${row.sale_id}</td>
+                    <td>${row.product_name}</td>
+                    <td>${row.quantity_returned}</td>
+                    <td class="refund-text">Rs. ${row.refund_amount.toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTable() {
+            const input = document.getElementById("search").value.toUpperCase();
+            const rows = document.getElementById("historyTable").getElementsByTagName("tr");
+            for (let i = 1; i < rows.length; i++) {
+                rows[i].style.display = rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+            }
+        }
+
+        // Load data on page open
+        loadHistory();
+    </script>
+</body>
+</html>

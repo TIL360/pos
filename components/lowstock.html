@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Low Stock Report | 2026</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: #fff; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { text-decoration: underline; text-transform: uppercase; font-size: 24px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #000; padding: 12px; text-align: center; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .no-print { margin-bottom: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+        button { padding: 10px 20px; cursor: pointer; background: #5d4037; color: white; border: none; border-radius: 5px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        <button onclick="saveAsPDF()" style="background: #27ae60;">Save as PDF</button>
+    </div>
+
+   <div class="report-container">
+    <h2>LOW STOCK REPORT</h2>
+    <p id="reportDate"></p>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Ser</th>
+                <th>Item Name</th>
+                <th>Stock Level</th>
+                <th>Qty</th>
+                <th>Def</th>
+            </tr>
+        </thead>
+        <tbody id="lowStockBody"> <!-- CRITICAL: This ID must exist -->
+            <!-- Data will be injected here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Set the generation date
+    document.getElementById('reportDate').innerText = "Generated on: " + new Date().toLocaleString();
+
+    async function loadReportData() {
+        const tbody = document.getElementById('lowStockBody');
+        
+        // Safety check to prevent the "null" error
+        if (!tbody) return console.error("Table body 'lowStockBody' not found!");
+
+        try {
+            // Call the API (Ensure this matches your preload name: authAPI or window.api)
+            const items = await window.authAPI.getLowStockReport();
+            
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">✅ All stock levels are healthy!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map((item, index) => {
+                const deficit = item.min_stock_level - item.stock;
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.min_stock_level}</td>
+                        <td style="color: #e74c3c; font-weight: bold;">${item.stock}</td>
+                        <td style="color: #c0392b; font-weight: bold; background: #fff5f5;">
+                            ${deficit > 0 ? deficit : 0}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error("Failed to load report:", err);
+            tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Error fetching data.</td></tr>`;
+        }
+    }
+
+    async function saveAsPDF() {
+        const result = await window.api.generatePDFFromWindow();
+        if (result && result.success) alert("✅ PDF Saved Successfully!");
+    }
+
+    // Run when the window finishes loading
+    window.onload = loadReportData;
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Pharmacists | Pharmacy POS</title>
+    <style>
+        :root { --medical-blue: #102a43; --teal-accent: #3ebd93; --bg-light: #f0f4f8; --white: #ffffff; --danger: #ef4e4e; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-light); margin: 0; padding: 20px; color: #243b53; }
+        .container { background: var(--white); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
+        h2, h3 { color: var(--medical-blue); margin-top: 0; border-bottom: 2px solid var(--bg-light); padding-bottom: 12px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #486581; }
+        input { width: 100%; padding: 12px; border: 2px solid #d9e2ec; border-radius: 10px; box-sizing: border-box; font-size: 15px; outline: none; }
+        input:focus { border-color: var(--teal-accent); }
+        .save-btn { background: var(--medical-blue); color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .save-btn:hover { background: var(--teal-accent); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: #f0f4f8; padding: 15px; text-align: left; color: var(--medical-blue); }
+        td { padding: 15px; border-bottom: 1px solid #f0f4f8; font-size: 14px; }
+        .del-btn { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>👤 Register Staff/Pharmacist</h2>
+    <form id="userForm">
+        <div class="form-group">
+            <label>Full Username</label>
+            <input type="text" id="username" required placeholder="e.g. PharmJohn">
+        </div>
+        <div class="form-group">
+            <label>Secure Password</label>
+            <input type="password" id="password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="save-btn">Authorize New User</button>
+    </form>
+
+    <div style="margin-top: 40px;">
+        <h3>Authorized Personnel</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+    </div>
+    <a href="dashboard.html" style="display:block; text-align:center; margin-top:20px; color:var(--medical-blue); text-decoration:none; font-weight:bold;">← Back to Dashboard</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadUsers);
+
+    async function loadUsers() {
+        const tableBody = document.getElementById('userTableBody');
+        try {
+            const users = await window.authAPI.getAllUsers();
+            tableBody.innerHTML = users.map(user => `
+                <tr>
+                    <td>#${user.id}</td>
+                    <td><strong>${user.username}</strong></td>
+                    <td style="text-align: right;">
+                        ${user.username === 'admin' ? '<i style="color:#829ab1">System</i>' : 
+                        `<button class="del-btn" onclick="deleteUser(${user.id})">Revoke Access</button>`}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) { console.error(err); }
+    }
+
+    document.getElementById('userForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const userData = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        };
+        const res = await window.authAPI.addUser(userData);
+        if(res.success) {
+            alert("Access Authorized!");
+            document.getElementById('userForm').reset();
+            loadUsers();
+        }
+    };
+
+    async function deleteUser(id) {
+        if(confirm("Revoke system access for this pharmacist?")) {
+            const res = await window.authAPI.deleteUser(id);
+            if(res.success) loadUsers();
+            else alert("Error: " + res.error);
+        }
+    }
+</script>
+</body>
+</html>

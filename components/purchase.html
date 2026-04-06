@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Stock Inward | Pharmacy POS</title>
+    <style>
+        :root {
+            --medical-blue: #102a43;
+            --teal-accent: #3ebd93;
+            --bg-light: #f0f4f8;
+            --white: #ffffff;
+            --border: #d9e2ec;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-light);
+            margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+        .container {
+            background: var(--white); padding: 40px; border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(16, 42, 67, 0.1); width: 100%; max-width: 480px;
+            border: 1px solid var(--border);
+        }
+        h2 { 
+            color: var(--medical-blue); margin-top: 0; border-bottom: 2px solid var(--bg-light); 
+            padding-bottom: 15px; display: flex; align-items: center; gap: 12px; font-size: 22px;
+        }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; color: #486581; font-size: 0.85rem; text-transform: uppercase; }
+        
+        select, input {
+            width: 100%; padding: 14px; border: 2px solid var(--border);
+            border-radius: 10px; font-size: 1rem; box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        select:focus, input:focus { border-color: var(--teal-accent); box-shadow: 0 0 8px rgba(62, 189, 147, 0.1); }
+
+        .btn-submit {
+            background-color: var(--medical-blue); color: white; border: none;
+            padding: 16px; width: 100%; border-radius: 12px; font-size: 1rem;
+            font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-submit:hover { background-color: var(--teal-accent); transform: translateY(-2px); }
+
+        .back-btn {
+            display: block; text-align: center; margin-top: 20px;
+            color: #829ab1; text-decoration: none; font-size: 0.9rem; font-weight: 600;
+        }
+        .back-btn:hover { color: var(--medical-blue); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛒 Record Stock Inward</h2>
+    <form id="purchaseForm">
+        <div class="form-group">
+            <label for="productSelect">Select Medicine</label>
+            <select id="productSelect" required>
+                <option value="">-- Search Inventory --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Quantity Received (Units)</label>
+            <input type="number" id="quantity" min="1" placeholder="Enter amount" required>
+        </div>
+
+        <div class="form-group">
+            <label for="costPrice">Unit Cost Price (Rs.)</label>
+            <input type="number" id="costPrice" step="0.01" min="0" placeholder="Price paid per unit" required>
+        </div>
+
+        <div class="form-group">
+            <label for="supplier">Supplier / Distributor</label>
+            <input type="text" id="supplier" placeholder="e.g. Global Pharma Wholesalers">
+        </div>
+
+        <button type="submit" class="btn-submit">Add to Inventory Ledger</button>
+    </form>
+    <a href="dashboard.html" class="back-btn">← Cancel and Back</a>
+</div>
+
+<script>
+    const form = document.getElementById('purchaseForm');
+    const select = document.getElementById('productSelect');
+
+    // 1. Load Medicines into Dropdown
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const products = await window.inventoryAPI.getProducts();
+            if (!products || products.length === 0) {
+                select.innerHTML = '<option disabled>-- No Records Found --</option>';
+                return;
+            }
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name; 
+                select.appendChild(opt);
+            });
+        } catch (err) {
+            alert("Critical Error: Cannot link to Pharmacy Database.");
+        }
+    });
+
+    // 2. Process Submission
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const purchaseData = {
+            productId: parseInt(select.value),
+            quantity: parseInt(document.getElementById('quantity').value),
+            costPrice: parseFloat(document.getElementById('costPrice').value),
+            supplier: document.getElementById('supplier').value.trim() || "Local Purchase"
+        };
+
+        try {
+            const response = await window.inventoryAPI.savePurchase(purchaseData);
+            if (response.success) {
+                alert('✅ Success! Stock Ledger updated.');
+                form.reset();
+                select.focus();
+            } else {
+                alert('❌ Error: ' + response.error);
+            }
+        } catch (err) {
+            alert("Submission failed. Check System Console.");
+        }
+    };
+</script>
+</body>
+</html>

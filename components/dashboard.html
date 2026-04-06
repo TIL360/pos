@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shehzad Books & Sports (POS) | Dashboard 2026</title>
+    <style>
+        :root {
+            --sidebar-bg: #102a43;
+            --medical-teal: #3ebd93;
+            --medical-blue: #007bff;
+            --danger-red: #ef4e4e;
+            --bg-light: #f0f4f8;
+            --card-white: #ffffff;
+            --text-main: #243b53;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h1 {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--medical-teal);
+            border-bottom: 1px solid #243b53;
+            padding-bottom: 15px;
+        }
+
+        .nav-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            background: transparent;
+            color: #bccad6;
+            text-decoration: none;
+            border: 1px solid #243b53;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .nav-btn:hover {
+            background: #243b53;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .admin-only { display: none; border-color: rgba(62, 189, 147, 0.2); }
+
+        /* Main Content */
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+
+        h2 { margin: 0; font-size: 28px; color: var(--sidebar-bg); }
+        #currentDate { color: #627d98; margin: 5px 0 0 0; }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-white);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-top: 4px solid var(--medical-blue);
+        }
+
+        .stat-card small { color: #829ab1; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+        .stat-card div { font-size: 26px; font-weight: 700; margin-top: 10px; color: var(--sidebar-bg); }
+
+        /* Grid Menu */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .menu-item {
+            background: var(--card-white);
+            padding: 35px 20px;
+            border-radius: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--sidebar-bg);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid #f0f4f8;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            border-color: var(--medical-teal);
+        }
+
+        .menu-item i { font-size: 45px; display: block; margin-bottom: 15px; font-style: normal; }
+        .menu-item span { font-weight: 700; font-size: 16px; display: block; }
+        .menu-item small { color: #829ab1; font-weight: 400; }
+
+        .logout-btn {
+            background: var(--danger-red) !important;
+            border: none !important;
+            color: white !important;
+            margin-top: auto;
+        }
+        /* Bottom container styling */
+.sidebar-bottom {
+    margin-top: auto;      /* Pushes this div to the very bottom */
+    padding: 0 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;             /* Space between the two buttons */
+}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h1 style="color: white; font-size: 1.5rem; text-align: center;">SHEHZAD <br/>Books & Sports || <strong style="color: yellow;">2026</strong></h1>
+    
+    <a href="customer_return.html" class="nav-btn">🔄 Customer Return</a>
+    
+    <!-- Admin/Manager Only Section -->
+    <a href="reports.html" id="nav-reports" class="nav-btn admin-only">📊 Sales Analysis</a>
+    <a href="supplier_return.html" id="nav-reports" class="nav-btn admin-only">↩️ Supplier Return</a>
+    <a href="lowstock.html" id="nav-lowstock" class="nav-btn admin-only">📉 Low Stock</a>
+    <a href="customer_return_history.html" id="nav-lowstock" class="nav-btn admin-only">📉 CR History</a>
+
+    <a href="newuser.html" id="nav-users" class="nav-btn admin-only">👥 Staff Management</a>
+    <button onclick="document.getElementById('passwordModal').style.display='block'" class="nav-btn admin-only">
+    <span style="margin-right: 8px;">🔒</span> Change Password
+</button>
+
+    <div class="sidebar-bottom">
+
+        <button onclick="window.authAPI.openDBFolder()" id="nav-db" class="nav-btn logout-btn admin-only" style="background: #7f8c8d;">📂 DB Location</button>
+        <button onclick="logout()" class="nav-btn logout-btn">🚪 Logout</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header-bar">
+        <div>
+            <h2 id="welcomeText">Store Login</h2>
+            <p id="currentDate"></p>
+        </div>
+        <div id="license-badge" style="background: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 600; color: var(--medical-teal);">
+            License: <span id="license-info">Checking...</span>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card" style="border-top-color: var(--medical-teal);">
+            <small>Session Revenue</small>
+            <div id="statRevenue">Rs. 0.00</div>
+        </div>
+        <div class="stat-card">
+            <small>Orders Handled</small>
+            <div id="statOrders">0</div>
+        </div>
+        <div class="stat-card" style="border-top-color: var(--danger-red);">
+            <small>Shortage Alerts</small>
+            <div id="statLowStock">0</div>
+        </div>
+    </div>
+
+    <!-- Main Grid Menu -->
+    <div class="grid-menu">
+        <a href="#" onclick="openSale('salemanual.html')" class="menu-item">
+            <i>📋</i><span>New Sale<br><small>(Manual Entry)</small></span>
+        </a>
+        <a href="#" onclick="openSale('sale.html')" class="menu-item">
+            <i>🛡️</i><span>New Sale<br><small>(Barcode Scan)</small></span>
+        </a>
+        <a href="items.html" class="menu-item"><i>➕</i><span>Add Product</span></a>
+        <a href="categories.html" class="menu-item"><i>📁</i><span>Categories</span></a>
+        
+        <!-- Admin Only Grid Items -->
+         
+        <a href="purchase.html" id="grid-purchase" class="menu-item admin-only"><i>📥</i><span>Purchase Inward</span></a>
+        <a href="inventory.html" id="grid-inventory" class="menu-item admin-only"><i>📋</i><span>Inventory List</span></a>
+    </div>
+</div>
+<!-- The Password Modal -->
+<div id="passwordModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000;">
+    <div style="background:white; width:350px; margin: 10% auto; padding:25px; border-radius:8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;">Change Password</h3>
+        
+        <label>Current Password:</label>
+        <input type="password" id="currentPass" style="width:100%; margin-bottom:15px; padding:8px;">
+        
+        <label>New Password:</label>
+        <input type="password" id="newPass" style="width:100%; margin-bottom:15px; padding:8px;">
+        
+        <label>Confirm New Password:</label>
+        <input type="password" id="confirmPass" style="width:100%; margin-bottom:20px; padding:8px;">
+        
+        <div style="display:flex; justify-content: space-between;">
+            <button onclick="submitPasswordChange()" style="background:#28a745; color:white; border:none; padding:10px 15px; cursor:pointer; border-radius:4px;">Update Password</button>
+            <button onclick="document.getElementById('passwordModal').style.display='none'" style="background:#dc3545; color:white; border:none; padding:10px 15px; cursor:pointer; border-radius:4px;">Cancel</button>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const userStr = sessionStorage.getItem('currentUser');
+        if (!userStr) {
+            window.location.href = "login.html";
+            return;
+        }
+        const user = JSON.parse(userStr);
+        document.getElementById('welcomeText').innerText = `Welcome, ${user.username}`;
+        document.getElementById('currentDate').innerText = new Date().toDateString();
+
+        // Apply Staff Restrictions: Only show Admin buttons if username is 'admin'
+        if (user.username.toLowerCase() === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        }
+
+        loadStats();
+        updateLicenseDisplay();
+    });
+
+    async function loadStats() {
+        try {
+            const result = await window.api.getDashboardStats();
+            if (result.success) {
+                document.getElementById('statRevenue').innerText = `Rs. ${result.revenue.toFixed(2)}`;
+                document.getElementById('statOrders').innerText = result.orders;
+                document.getElementById('statLowStock').innerText = result.lowStock;
+            }
+        } catch (err) { console.error("Stats Fetch Error:", err); }
+    }
+
+    async function updateLicenseDisplay() {
+        const status = await window.api.getLicenseStatus();
+        document.getElementById('license-info').innerText = status;
+    }
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = "login.html";
+    }
+
+    function openSale(pageName) {
+        window.api.send('open-sales-window', { page: pageName, user: 'Pharmacist' });
+    }
+//change password
+async function submitPasswordChange() {
+    const currentP = document.getElementById('currentPass').value;
+    const newP = document.getElementById('newPass').value;
+    const confirmP = document.getElementById('confirmPass').value;
+
+    if (!currentP || !newP) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    if (newP !== confirmP) {
+        alert("New passwords do not match!");
+        return;
+    }
+
+    const res = await window.authAPI.changePassword(currentP, newP);
+    
+    if (res.success) {
+        alert("Password updated successfully!");
+        document.getElementById('passwordModal').style.display = 'none';
+        // Clear inputs
+        document.getElementById('currentPass').value = '';
+        document.getElementById('newPass').value = '';
+        document.getElementById('confirmPass').value = '';
+    } else {
+        alert("Error: " + res.message);
+    }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "point-of-sale",
+  "version": "1.0.0",
+  "description": "It is my first POS App",
+  "keywords": [
+    "Electon",
+    "App"
+  ],
+  "license": "ISC",
+  "author": "Raja Bilal",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
+  },
+   "build": {
+    "appId": "com.raja.pos",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "extraResources": [
+      "pos_data.db"
+    ],
+    "win": {
+      "target": "dir"
+    }
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
+    "electron-rebuild": "^3.2.9"
+  }
+}

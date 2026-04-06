@@ -1,0 +1,4 @@
+node_modules/
+POS/
+point_of_sale.db
+*.db

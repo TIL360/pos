@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Shehzad Books & Sports Point of Sale</title>
+    <style>
+        :root {
+            /* Colors sampled directly from your dashboard image */
+            --bg-page: #f4f6f9;         /* Light grey background */
+            --sidebar-dark: #2c3e50;    /* Dark navy/charcoal from sidebar */
+            --accent-orange: #e67e22;   /* Orange from "Auto-Generate Order" */
+            --text-white: #ffffff;
+            --text-muted: #666;
+            --error: #e74c3c;
+            --border: #dee2e6;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-page);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-card { 
+            background: var(--sidebar-dark); /* Using the dashboard sidebar color */
+            padding: 40px;
+            width: 380px;
+            border-radius: 8px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center;
+            color: var(--text-white);
+        }
+
+        h2 { 
+            margin-bottom: 5px; 
+            color: var(--text-white);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sub-title {
+            color: #bdc3c7;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #bdc3c7;
+            text-transform: uppercase;
+        }
+
+        input { 
+            width: 100%;
+            padding: 12px;
+            background-color: #34495e; /* Slightly lighter than card for depth */
+            border: 1px solid #455a64;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            color: white;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+
+        input::placeholder {
+            color: #7f8c8d;
+        }
+
+        button { 
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-orange); /* Matching the dashboard highlight */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        button:hover { 
+            background-color: #d35400; /* Darker orange on hover */
+        }
+
+        button:active { 
+            transform: scale(0.98); 
+        }
+
+        #error-msg { 
+            color: var(--error); 
+            font-size: 14px; 
+            margin-top: 15px;
+            min-height: 20px; 
+        }
+
+        .footer-note {
+            margin-top: 25px;
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>🔒 POS CORE</h2>
+        <div class="sub-title">Sign in to manage your store</div>
+        
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Username">
+        </div>
+
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        
+        <button id="loginBtn">Login</button>
+        
+        <p id="error-msg"></p>
+
+        <div class="footer-note">
+            © 2026 T.M Brothers Tech. All Rights Reserved.
+        </div>
+    </div>
+
+    <script>
+        const loginBtn = document.getElementById('loginBtn');
+        const userInp = document.getElementById('username');
+        const passInp = document.getElementById('password');
+        const errorMsg = document.getElementById('error-msg');
+
+        loginBtn.addEventListener('click', async () => {
+            loginBtn.innerText = "Authenticating...";
+            loginBtn.disabled = true;
+            errorMsg.innerText = "";
+
+            const credentials = {
+                username: userInp.value,
+                password: passInp.value
+            };
+
+            try {
+                // Ensure authAPI is correctly exposed in your Electron/Web environment
+                const result = await window.authAPI.attemptLogin(credentials);
+                
+                if (result.success) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(result.user));
+                    window.location.href = "dashboard.html";
+                } else {
+                    errorMsg.innerText = result.message || "Invalid Credentials";
+                    loginBtn.innerText = "Login";
+                    loginBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error("Login script error:", err);
+                errorMsg.innerText = "Connection Error";
+                loginBtn.innerText = "Login";
+                loginBtn.disabled = false;
+            }
+        });
+
+        window.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+    </script>
+</body>
+</html>

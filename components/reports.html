@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+
+    <title>Sales Report | POS 2026</title>
+    <!-- Font Awesome for Icons -->
+    
+<link rel="stylesheet" href="../assets/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #1a73e8;
+            --dark-blue: #1557b0;
+            --light-blue: #e8f0fe;
+            --bg-gray: #f1f3f4;
+            --border: #dadce0;
+            --text-main: #3c4043;
+            --text-secondary: #5f6368;
+        }
+
+        body {
+            background-color: var(--bg-gray);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .report-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(60,64,67,0.3);
+            overflow: hidden;
+        }
+
+        /* Header Section */
+        .report-header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .report-header h2 {
+            margin: 0 0 20px 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            outline: none;
+            width: 200px;
+        }
+
+        .btn-generate {
+            background-color: #34a853; /* Success Green */
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-generate:hover {
+            background-color: #2d8e47;
+        }
+
+        /* Table Section */
+        .report-content {
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .report-table th {
+            text-align: left;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Sale Grouping Header */
+        .sale-header-row {
+            background-color: var(--light-blue);
+            color: var(--dark-blue);
+            font-weight: bold;
+        }
+
+        .sale-header-row td {
+            padding: 15px;
+            border-top: 2px solid var(--border);
+        }
+
+        /* Product Detail Rows */
+        .product-detail-row td {
+            padding: 10px 15px 10px 50px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .text-right { text-align: right; }
+
+        /* Footer / Totals */
+        .report-footer {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            background: #fafafa;
+        }
+
+        .grand-total-display {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="report-container">
+        <!-- Dashboard Navigation -->
+        <div style="padding: 10px 30px; background: #eee;">
+            <a href="dashboard.html" style="text-decoration: none; color: var(--primary-blue); font-size: 14px;">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <div class="report-header">
+            <h2><i class="fas fa-chart-line"></i> Sales Report by User</h2>
+            <div class="controls">
+                <div class="input-group">
+                    <label>Select Date</label>
+                    <input type="date" id="report-date">
+                </div>
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="report-username" placeholder="Enter username">
+                </div>
+                <button class="btn-generate" onclick="loadReport()">
+                    <i class="fas fa-sync"></i> Generate Report
+                </button>
+            </div>
+        </div>
+
+        <div class="report-content">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>ID (Sale / Product)</th>
+                        <th>Customer / Product Name</th>
+                        <th>Time / Qty</th>
+                        <th class="text-right">Total (Rs.) / Unit Price</th>
+                    </tr>
+                </thead>
+                <tbody id="report-tbody">
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:50px; color:#999;">
+                            Enter details and click Generate Report to see data.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-footer">
+            <div class="grand-total-display">
+                Grand Total: <span id="grand-total">Rs. 0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+async function loadReport() {
+    const dateVal = document.getElementById('report-date').value;
+    const userVal = document.getElementById('report-username').value;
+    const tbody = document.getElementById('report-tbody');
+    const grandTotalEl = document.getElementById('grand-total');
+
+    if (!dateVal || !userVal) {
+        alert("Please select both a date and a username.");
+        return;
+    }
+
+    try {
+        const sales = await window.authAPI.getSalesReport({ date: dateVal, username: userVal });
+        
+        let html = '';
+        let grandTotal = 0;
+        
+        // 1. Initialize summary counters
+        let cashTotal = 0, onlineTotal = 0, cardTotal = 0;
+
+        if (!sales || sales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">No records.</td></tr>';
+            grandTotalEl.innerText = "Rs. 0.00";
+            return;
+        }
+
+        sales.forEach(sale => {
+            grandTotal += sale.total;
+
+            // 2. Aggregate totals based on the 'method' field from backend
+            if (sale.method === 'Cash') cashTotal += sale.total;
+            else if (sale.method === 'Online Payment') onlineTotal += sale.total;
+            else if (sale.method === 'Bank Card') cardTotal += sale.total;
+
+            const timeStr = new Date(sale.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Sale Header Row (shows the payment method badge)
+            html += `
+                <tr class="sale-header-row">
+                    <td><i class="fas fa-receipt"></i> SALE #${sale.id} <small>(${sale.method})</small></td>
+                    <td>${sale.customer}</td>
+                    <td>${timeStr}</td>
+                    <td class="text-right">Rs. ${sale.total.toFixed(2)}</td>
+                </tr>`;
+
+            sale.items.forEach(item => {
+                html += `
+                    <tr class="product-detail-row">
+                        <td>PID: ${item.id}</td>
+                        <td>${item.name}</td>
+                        <td>Qty: ${item.qty}</td>
+                        <td class="text-right">@ Rs. ${item.price.toFixed(2)}</td>
+                    </tr>`;
+            });
+        });
+
+        tbody.innerHTML = html;
+
+        // 3. Display the detailed breakdown at the end
+        grandTotalEl.innerHTML = `
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; font-weight: normal;">
+                Cash: Rs. ${cashTotal.toFixed(2)} | 
+                Online: Rs. ${onlineTotal.toFixed(2)} | 
+                Card: Rs. ${cardTotal.toFixed(2)}
+            </div>
+            Total: Rs. ${grandTotal.toFixed(2)}
+        `;
+
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+    </script>
+</body>
+</html>

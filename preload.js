@@ -16,6 +16,8 @@ openDBFolder: () => ipcRenderer.send('open-db-folder'),
     updateProductPrice: (id, price) => ipcRenderer.invoke('update-price', { id, price }),
     getLowStockReport: () => ipcRenderer.invoke('get-low-stock-report'),
     
+updateCategory: (id, name) => ipcRenderer.invoke('update-category', { id, name }),
+    
     processSaleManual: (saleData) => ipcRenderer.invoke('process-sale-manual', saleData),
 
     getBillDetails: (saleId) => ipcRenderer.invoke('get-bill-details', saleId),    

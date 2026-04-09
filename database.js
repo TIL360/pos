@@ -69,7 +69,7 @@ function addProduct(item) {
 function getAllProducts() { return db.prepare('SELECT * FROM products ORDER BY id DESC').all(); }
 function getProductByBarcode(barcode) { return db.prepare('SELECT * FROM products WHERE barcode = ?').get(barcode); }
 function addCategory(name) { try { db.prepare('INSERT INTO categories (name) VALUES (?)').run(name); return { success: true }; } catch (e) { return { success: false, error: e.message }; } }
-function getCategories() { try { const rows = db.prepare('SELECT name FROM categories ORDER BY name ASC').all(); return { success: true, categories: rows }; } catch (e) { return { success: false, error: e.message }; } }
+function getCategories() { try { const rows = db.prepare('SELECT id, name FROM categories ORDER BY name ASC').all(); return { success: true, categories: rows }; } catch (e) { return { success: false, error: e.message }; } }
 
 function addPurchase(data) {
     const transaction = db.transaction(() => {
@@ -421,7 +421,9 @@ function getSalesReportWithDetails(date, username) {
 }
 
 
-
+function updateCategory(id, newName) {
+    return db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(newName, id);
+}
 // Don't forget to add getSaleDetails to your module.exports!
 
 // CRITICAL: ALL FUNCTIONS MUST BE EXPORTED HERE
@@ -445,5 +447,5 @@ module.exports = {
     processSupplierReturn,
     processCustomerReturn,
     getBillDetails, getReturnHistory, getReturnHistoryBySale, changeUserPassword,
-    getSalesReportWithDetails
+    getSalesReportWithDetails, updateCategory
 };  

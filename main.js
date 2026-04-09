@@ -4,7 +4,7 @@ const fs = require('fs');
 const { shell } = require('electron'); // Add this at the top
 
 // 1. EXPIRY CONFIGURATION
-const EXPIRY_DATE = new Date(2026, 6, 30); // Dec 31, 2025 (Format: Year, Month-1, Day)
+const EXPIRY_DATE = new Date(2026, 5, 31); // May 31, 2025 (Format: Year, Month-1, Day)
 
 // 2. IMPORT FROM DATABASE.JS
 const { 
@@ -22,7 +22,7 @@ const {
     getReturnHistory,
     getReturnHistoryBySale,
     changeUserPassword,
-    processSale
+    processSale, updateCategory
 } = require('./database.js');
  
 
@@ -177,6 +177,10 @@ ipcMain.handle('get-product-by-barcode', (event, barcode) => {
 ipcMain.handle('add-category', async (event, categoryName) => {
     try { return addCategory(categoryName); } 
     catch (error) { return { success: false, error: error.message }; }
+});
+ipcMain.handle('update-category', async (event, { id, name }) => {
+    try { return { success: true, result: updateCategory(id, name) }; } 
+    catch (e) { return { success: false, error: e.message }; }
 });
 
 ipcMain.handle('get-categories', async () => {
